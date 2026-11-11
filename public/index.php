@@ -11,8 +11,11 @@ declare(strict_types=1);
         (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH),
         '/'
     );
-    // dirname de /crud-usuarios/public/index.php  →  /crud-usuarios/public
-    $publicBase = rtrim(dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php')), '/');
+    // dirname de /users-management-php-CONTRATO-/public/index.php  →  /users-management-php-CONTRATO-/public
+    $publicBase = rtrim(
+    str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))),
+    '/'
+);
 
     // Si la URL pedida no comienza con /…/public/, fue un acceso directo indebido.
     if ($requestPath !== $publicBase && !str_starts_with($requestPath, $publicBase . '/')) {

@@ -14,6 +14,8 @@ final class WebRoutes
                 'method' => 'GET',
                 'action' => 'home',
             ),
+            
+            // Rutas de Usuarios
             'users.create' => array(
                 'method' => 'GET',
                 'action' => 'create',
@@ -42,6 +44,38 @@ final class WebRoutes
                 'method' => 'POST',
                 'action' => 'delete',
             ),
+
+            // Rutas de Contratos
+            'contratos.create' => array(
+                'method' => 'GET',
+                'action' => 'contratos.create',
+            ),
+            'contratos.store' => array(
+                'method' => 'POST',
+                'action' => 'contratos.store',
+            ),
+            'contratos.index' => array(
+                'method' => 'GET',
+                'action' => 'contratos.index',
+            ),
+            'contratos.show' => array(
+                'method' => 'GET',
+                'action' => 'contratos.show',
+            ),
+            'contratos.edit' => array(
+                'method' => 'GET',
+                'action' => 'contratos.edit',
+            ),
+            'contratos.update' => array(
+                'method' => 'POST',
+                'action' => 'contratos.update',
+            ),
+            'contratos.delete' => array(
+                'method' => 'POST',
+                'action' => 'contratos.delete',
+            ),
+
+            // Rutas de Autenticación
             'auth.login' => array(
                 'method' => 'GET',
                 'action' => 'login',

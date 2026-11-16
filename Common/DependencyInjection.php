@@ -156,4 +156,94 @@ final class DependencyInjection
             self::getUserRepository()
         );
     }
+
+
+public static function getContratoPersistenceMapper(): ContratoPersistenceMapper
+    {
+        ClassLoader::loadClass('ContratoPersistenceMapper');
+
+        return new ContratoPersistenceMapper();
+    }
+
+    public static function getContratoRepository(): ContratoRepositoryMySQL
+    {
+        ClassLoader::loadClass('ContratoRepositoryMySQL');
+
+        return new ContratoRepositoryMySQL(
+            self::getPdo(),
+            self::getContratoPersistenceMapper()
+        );
+    }
+
+    public static function getCreateContratoUseCase(): CreateContratoUseCase
+    {
+        ClassLoader::loadClass('CreateContratoService');
+
+        return new CreateContratoService(
+            self::getContratoRepository()
+        );
+    }
+
+    public static function getUpdateContratoUseCase(): UpdateContratoUseCase
+    {
+        ClassLoader::loadClass('UpdateContratoService');
+        $repository = self::getContratoRepository();
+
+        return new UpdateContratoService(
+            $repository,
+            $repository
+        );
+    }
+
+    public static function getGetContratoByIdUseCase(): GetContratoByIdUseCase
+    {
+        ClassLoader::loadClass('GetContratoByIdService');
+
+        return new GetContratoByIdService(
+            self::getContratoRepository()
+        );
+    }
+
+    public static function getGetAllContratoUseCase(): GetAllContratoUseCase
+    {
+        ClassLoader::loadClass('GetAllContratoService');
+
+        return new GetAllContratoService(
+            self::getContratoRepository()
+        );
+    }
+
+    public static function getDeleteContratoUseCase(): DeleteContratoUseCase
+    {
+        ClassLoader::loadClass('DeleteContratoService');
+        $repository = self::getContratoRepository();
+
+        return new DeleteContratoService(
+            $repository,
+            $repository
+        );
+    }
+
+    public static function getContratoWebMapper(): ContratoWebMapper
+    {
+        ClassLoader::loadClass('ContratoWebMapper');
+
+        return new ContratoWebMapper();
+    }
+
+    public static function getContratoController(): ContratoController
+    {
+        ClassLoader::loadClass('ContratoController');
+
+        return new ContratoController(
+            self::getCreateContratoUseCase(),
+            self::getUpdateContratoUseCase(),
+            self::getGetContratoByIdUseCase(),
+            self::getGetAllContratoUseCase(),
+            self::getDeleteContratoUseCase(),
+            self::getContratoWebMapper()
+        );
+    }
+
+
 }

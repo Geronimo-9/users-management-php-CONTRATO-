@@ -80,6 +80,70 @@ final class ClassLoader
         'Flash' => 'Infrastructure/Entrypoints/Web/Presentation/Flash.php',
 
         'DependencyInjection' => 'Common/DependencyInjection.php',
+
+
+// Excepciones y Enums de Contrato
+        'FechaInvalidaExcepcion' => 'Domain/Exceptions/FechaInvalidaExcepcion.php',
+        'FormatoInvalidoExcepcion' => 'Domain/Exceptions/FormatoInvalidoExcepcion.php',
+        'ParametrosVaciosExcepcion' => 'Domain/Exceptions/ParametrosVaciosExcepcion.php',
+        'ValoresNegativosExcepcion' => 'Domain/Exceptions/ValoresNegativosExcepcion.php',
+        'EstadoContratoEnum' => 'Domain/Enums/EstadoContratoEnum.php',
+        'FrecuenciaPagoEnum' => 'Domain/Enums/FrecuenciaPagoEnum.php',
+
+        // Value Objects, Modelo y Eventos de Contrato
+        'TextoNombre' => 'Domain/ValueObjects/contrato/TextoNombre.php',
+        'Empresa' => 'Domain/ValueObjects/contrato/Empresa.php',
+        'Empleado' => 'Domain/ValueObjects/contrato/Empleado.php',
+        'Funciones' => 'Domain/ValueObjects/contrato/Funciones.php',
+        'Monto' => 'Domain/ValueObjects/contrato/Monto.php',
+        'FechaContrato' => 'Domain/ValueObjects/contrato/FechaContrato.php',
+        'FechaFirma' => 'Domain/ValueObjects/contrato/FechaFirma.php',
+        'FechaInicio' => 'Domain/ValueObjects/contrato/FechaInicio.php',
+        'FechaFin' => 'Domain/ValueObjects/contrato/FechaFin.php',
+        'Contrato' => 'Domain/Models/Contrato.php',
+        'ContratoCreatedDomainEvent' => 'Domain/Events/ContratoCreatedDomainEvent.php',
+        'ContratoUpdatedDomainEvent' => 'Domain/Events/ContratoUpdatedDomainEvent.php',
+        'ContratoDeletedDomainEvent' => 'Domain/Events/ContratoDeletedDomainEvent.php',
+
+        // Application Ports, DTOs, Services y Mapper de Contrato
+        'CreateContratoUseCase' => 'Application/Ports/In/CreateContratoUseCase.php',
+        'UpdateContratoUseCase' => 'Application/Ports/In/UpdateContratoUseCase.php',
+        'GetContratoByIdUseCase' => 'Application/Ports/In/GetContratoByIdUseCase.php',
+        'GetAllContratoUseCase' => 'Application/Ports/In/GetAllContratoUseCase.php',
+        'DeleteContratoUseCase' => 'Application/Ports/In/DeleteContratoUseCase.php',
+
+        'SaveContratoPort' => 'Application/Ports/Out/SaveContratoPort.php',
+        'UpdateContratoPort' => 'Application/Ports/Out/UpdateContratoPort.php',
+        'GetContratoByIdPort' => 'Application/Ports/Out/GetContratoByIdPort.php',
+        'GetAllContratoPort' => 'Application/Ports/Out/GetAllContratoPort.php',
+        'DeleteContratoPort' => 'Application/Ports/Out/DeleteContratoPort.php',
+
+        'CreateContratoCommand' => 'Application/Services/Dto/Commands/CreateContratoCommand.php',
+        'UpdateContratoCommand' => 'Application/Services/Dto/Commands/UpdateContratoCommand.php',
+        'DeleteContratoCommand' => 'Application/Services/Dto/Commands/DeleteContratoCommand.php',
+        'GetContratoByIdQuery' => 'Application/Services/Dto/Queries/GetContratoByIdQuery.php',
+        'GetAllContratoQuery' => 'Application/Services/Dto/Queries/GetAllContratoQuery.php',
+
+        'CreateContratoService' => 'Application/Services/CreateContratoService.php',
+        'UpdateContratoService' => 'Application/Services/UpdateContratoService.php',
+        'GetContratoByIdService' => 'Application/Services/GetContratoByIdService.php',
+        'GetAllContratoService' => 'Application/Services/GetAllContratoService.php',
+        'DeleteContratoService' => 'Application/Services/DeleteContratoService.php',
+        'ContratoApplicationMapper' => 'Application/Services/Mappers/ContratoApplicationMapper.php',
+
+        // Infrastructure Persistence & Web de Contrato
+        'ContratoPersistenceDto' => 'Infrastructure/Adapters/Persistence/MySQL/Dto/ContratoPersistenceDto.php',
+        'ContratoEntity' => 'Infrastructure/Adapters/Persistence/MySQL/Entity/ContratoEntity.php',
+        'ContratoPersistenceMapper' => 'Infrastructure/Adapters/Persistence/MySQL/Mapper/ContratoPersistenceMapper.php',
+        'ContratoRepositoryMySQL' => 'Infrastructure/Adapters/Persistence/MySQL/Repository/ContratoRepositoryMySQL.php',
+
+        'CreateContratoWebRequest' => 'Infrastructure/Entrypoints/Web/Controllers/Dto/CreateContratoRequest.php',
+        'UpdateContratoWebRequest' => 'Infrastructure/Entrypoints/Web/Controllers/Dto/UpdateContratoRequest.php',
+        'ContratoResponse' => 'Infrastructure/Entrypoints/Web/Controllers/Dto/ContratoResponse.php',
+        'ContratoWebMapper' => 'Infrastructure/Entrypoints/Web/Controllers/Mapper/ContratoWebMapper.php',
+        'ContratoController' => 'Infrastructure/Entrypoints/Web/Controllers/ContratoController.php',
+
+
     );
 
     public static function register(): void

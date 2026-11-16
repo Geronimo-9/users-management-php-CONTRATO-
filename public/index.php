@@ -6,9 +6,14 @@ declare(strict_types=1);
 // El .htaccess redirige internamente cualquier URL que no sea public/ hacia aquí.
 // Detectamos ese caso comparando la URL solicitada con la ruta pública esperada.
 
-(function (): void{
+(function (): void {
     $requestPath = rtrim(
-        (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH),
+        str_replace('\\', '/', (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH)),
+        '/'
+    );
+    // Normaliza '\' a '/' para evitar redirecciones protocol-relative ('//index.php') en Windows
+    $publicBase = rtrim(
+        str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))),
         '/'
     );
     // dirname de /users-management-php-CONTRATO-/public/index.php  →  /users-management-php-CONTRATO-/public
@@ -80,7 +85,7 @@ if ($httpMethod !== $definition['method']) {
     exit;
 }
 
-// Protect all user management routes behind authentication.
+// Protect all user and contract management routes behind authentication.
 $publicActions = array('home', 'login', 'authenticate', 'logout', 'forgot', 'forgot.send', 'create', 'store');
 if (!in_array($definition['action'], $publicActions, true) && !isLoggedIn()) {
     Flash::setMessage('Debes iniciar sesión para acceder a esta sección.');
@@ -185,6 +190,105 @@ try {
             View::redirect('users.index');
             break;
 
+        case 'contratos.create':
+            View::render('users/createContrato', buildCreateContratoViewData());
+            break;
+
+        case 'contratos.store':
+            $controller = DependencyInjection::getContratoController();
+            $form = getCreateContratoFormData();
+            $errors = validateCreateContratoForm($form);
+
+            if (!empty($errors)) {
+                Flash::setOld($form);
+                Flash::setErrors($errors);
+                Flash::setMessage('Corrige los errores del formulario.');
+                View::redirect('contratos.create');
+            }
+
+            $usuarioId = (string) ($_SESSION['auth']['id'] ?? '');
+            $request = new CreateContratoWebRequest(
+                $usuarioId,
+                $form['empresa'],
+                $form['empleado'],
+                $form['funciones'],
+                $form['monto'],
+                $form['frecuencia_pago'],
+                $form['fecha_firma'],
+                $form['fecha_inicio'],
+                $form['fecha_fin']
+            );
+
+            $controller->store($request);
+
+            Flash::setSuccess('Contrato registrado correctamente.');
+            View::redirect('contratos.index');
+            break;
+
+        case 'contratos.index':
+            $controller = DependencyInjection::getContratoController();
+            $contratos = $controller->index();
+            View::render('users/listContrato', buildListContratosViewData($contratos));
+            break;
+
+        case 'contratos.show':
+            $controller = DependencyInjection::getContratoController();
+            $id = isset($_GET['id']) ? trim((string) $_GET['id']) : '';
+            $contrato = $controller->show($id);
+            View::render('users/showContrato', array(
+                'pageTitle' => 'Detalle de contrato',
+                'contrato' => $contrato,
+                'message' => Flash::message(),
+            ));
+            break;
+
+        case 'contratos.edit':
+            $controller = DependencyInjection::getContratoController();
+            $id = isset($_GET['id']) ? trim((string) $_GET['id']) : '';
+            $contrato = $controller->show($id);
+            View::render('users/editContrato', buildEditContratoViewData($contrato));
+            break;
+
+        case 'contratos.update':
+            $controller = DependencyInjection::getContratoController();
+            $form = getUpdateContratoFormData();
+            $errors = validateUpdateContratoForm($form);
+
+            if (!empty($errors)) {
+                Flash::setOld($form);
+                Flash::setErrors($errors);
+                Flash::setMessage('Corrige los errores del formulario.');
+                header('Location: ?route=contratos.edit&id=' . urlencode($form['id']));
+                exit;
+            }
+
+            $request = new UpdateContratoWebRequest(
+                $form['id'],
+                $form['empresa'],
+                $form['empleado'],
+                $form['funciones'],
+                $form['monto'],
+                $form['frecuencia_pago'],
+                $form['fecha_firma'],
+                $form['fecha_inicio'],
+                $form['fecha_fin'],
+                $form['estado']
+            );
+
+            $controller->update($request);
+
+            Flash::setSuccess('Contrato actualizado correctamente.');
+            View::redirect('contratos.index');
+            break;
+
+        case 'contratos.delete':
+            $controller = DependencyInjection::getContratoController();
+            $id = isset($_POST['id']) ? trim((string) $_POST['id']) : '';
+            $controller->delete($id);
+            Flash::setSuccess('Contrato eliminado correctamente.');
+            View::redirect('contratos.index');
+            break;
+
         case 'login':
             if (isLoggedIn()) {
                 View::redirect('home');
@@ -234,7 +338,6 @@ try {
             session_destroy();
             header('Location: ?route=auth.login');
             exit;
-
 
         case 'forgot':
             View::render('auth/forgot-password', array(
@@ -299,6 +402,17 @@ try {
             header('Location: ?route=users.edit&id=' . urlencode($updateId));
             exit;
 
+        case 'contratos.store':
+            Flash::setOld(getCreateContratoFormData());
+            View::redirect('contratos.create');
+            break;
+
+        case 'contratos.update':
+            $updateId = trim((string) ($_POST['id'] ?? ''));
+            Flash::setOld(getUpdateContratoFormData());
+            header('Location: ?route=contratos.edit&id=' . urlencode($updateId));
+            exit;
+
         case 'auth.authenticate':
             Flash::setOld(array('email' => trim(strtolower((string) ($_POST['email'] ?? '')))));
             View::redirect('auth.login');
@@ -317,6 +431,16 @@ try {
         case 'users.delete':
             Flash::setMessage($msg);
             View::redirect('users.index');
+            break;
+
+        case 'contratos.show':
+        case 'contratos.edit':
+            View::redirect('contratos.index');
+            break;
+
+        case 'contratos.delete':
+            Flash::setMessage($msg);
+            View::redirect('contratos.index');
             break;
 
         default:
@@ -405,6 +529,51 @@ function buildEditUserViewData(UserResponse $user): array
     );
 }
 
+/**
+ * @param ContratoResponse[] $contratos
+ * @return array<string, mixed>
+ */
+function buildListContratosViewData(array $contratos): array
+{
+    return array(
+        'pageTitle' => 'Lista de contratos',
+        'contratos' => $contratos,
+        'message' => Flash::message(),
+        'success' => Flash::success(),
+    );
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function buildCreateContratoViewData(): array
+{
+    return array(
+        'pageTitle' => 'Registrar contrato',
+        'frecuenciaOptions' => FrecuenciaPagoEnum::values(),
+        'message' => Flash::message(),
+        'success' => Flash::success(),
+        'errors' => Flash::errors(),
+        'old' => Flash::old(),
+    );
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function buildEditContratoViewData(ContratoResponse $contrato): array
+{
+    return array(
+        'pageTitle' => 'Editar contrato',
+        'contrato' => $contrato,
+        'frecuenciaOptions' => FrecuenciaPagoEnum::values(),
+        'estadoOptions' => EstadoContratoEnum::values(),
+        'message' => Flash::message(),
+        'errors' => Flash::errors(),
+        'old' => Flash::old(),
+    );
+}
+
 
 function generateUuid4(): string
 {
@@ -441,6 +610,42 @@ function getUpdateUserFormData(): array
         'password' => isset($_POST['password']) ? (string) $_POST['password'] : '',
         'role' => isset($_POST['role']) ? trim((string) $_POST['role']) : '',
         'status' => isset($_POST['status']) ? trim((string) $_POST['status']) : '',
+    );
+}
+
+/**
+ * @return array<string, string>
+ */
+function getCreateContratoFormData(): array
+{
+    return array(
+        'empresa' => isset($_POST['empresa']) ? trim((string) $_POST['empresa']) : '',
+        'empleado' => isset($_POST['empleado']) ? trim((string) $_POST['empleado']) : '',
+        'funciones' => isset($_POST['funciones']) ? trim((string) $_POST['funciones']) : '',
+        'monto' => isset($_POST['monto']) ? trim((string) $_POST['monto']) : '',
+        'frecuencia_pago' => isset($_POST['frecuencia_pago']) ? trim((string) $_POST['frecuencia_pago']) : '',
+        'fecha_firma' => isset($_POST['fecha_firma']) ? trim((string) $_POST['fecha_firma']) : '',
+        'fecha_inicio' => isset($_POST['fecha_inicio']) ? trim((string) $_POST['fecha_inicio']) : '',
+        'fecha_fin' => isset($_POST['fecha_fin']) ? trim((string) $_POST['fecha_fin']) : '',
+    );
+}
+
+/**
+ * @return array<string, string>
+ */
+function getUpdateContratoFormData(): array
+{
+    return array(
+        'id' => isset($_POST['id']) ? trim((string) $_POST['id']) : '',
+        'empresa' => isset($_POST['empresa']) ? trim((string) $_POST['empresa']) : '',
+        'empleado' => isset($_POST['empleado']) ? trim((string) $_POST['empleado']) : '',
+        'funciones' => isset($_POST['funciones']) ? trim((string) $_POST['funciones']) : '',
+        'monto' => isset($_POST['monto']) ? trim((string) $_POST['monto']) : '',
+        'frecuencia_pago' => isset($_POST['frecuencia_pago']) ? trim((string) $_POST['frecuencia_pago']) : '',
+        'fecha_firma' => isset($_POST['fecha_firma']) ? trim((string) $_POST['fecha_firma']) : '',
+        'fecha_inicio' => isset($_POST['fecha_inicio']) ? trim((string) $_POST['fecha_inicio']) : '',
+        'fecha_fin' => isset($_POST['fecha_fin']) ? trim((string) $_POST['fecha_fin']) : '',
+        'estado' => isset($_POST['estado']) ? trim((string) $_POST['estado']) : '',
     );
 }
 
@@ -494,7 +699,6 @@ function validateUpdateUserForm(array $form): array
         $errors['email'] = 'El correo no tiene un formato válido.';
     }
 
-    // Password is optional on update; validate only if provided.
     if ($form['password'] !== '' && strlen($form['password']) < 8) {
         $errors['password'] = 'La contraseña debe tener al menos 8 caracteres si deseas cambiarla.';
     }
@@ -505,6 +709,66 @@ function validateUpdateUserForm(array $form): array
 
     if ($form['status'] === '') {
         $errors['status'] = 'El estado es obligatorio.';
+    }
+
+    return $errors;
+}
+
+/**
+ * @param array<string, string> $form
+ * @return array<string, string>
+ */
+function validateCreateContratoForm(array $form): array
+{
+    $errors = array();
+
+    if ($form['empresa'] === '') {
+        $errors['empresa'] = 'La empresa es obligatoria.';
+    }
+
+    if ($form['empleado'] === '') {
+        $errors['empleado'] = 'El empleado es obligatorio.';
+    }
+
+    if ($form['funciones'] === '') {
+        $errors['funciones'] = 'Las funciones son obligatorias.';
+    }
+
+    if ($form['monto'] === '' || !is_numeric($form['monto'])) {
+        $errors['monto'] = 'El monto es obligatorio y debe ser numérico.';
+    } elseif ((float) $form['monto'] < 0) {
+        $errors['monto'] = 'El monto no puede ser negativo.';
+    }
+
+    if ($form['frecuencia_pago'] === '') {
+        $errors['frecuencia_pago'] = 'La frecuencia de pago es obligatoria.';
+    }
+
+    if ($form['fecha_firma'] === '') {
+        $errors['fecha_firma'] = 'La fecha de firma es obligatoria.';
+    }
+
+    if ($form['fecha_inicio'] === '') {
+        $errors['fecha_inicio'] = 'La fecha de inicio es obligatoria.';
+    }
+
+    if ($form['fecha_fin'] === '') {
+        $errors['fecha_fin'] = 'La fecha de fin es obligatoria.';
+    }
+
+    return $errors;
+}
+
+/**
+ * @param array<string, string> $form
+ * @return array<string, string>
+ */
+function validateUpdateContratoForm(array $form): array
+{
+    $errors = validateCreateContratoForm($form);
+
+    if ($form['estado'] === '') {
+        $errors['estado'] = 'El estado es obligatorio.';
     }
 
     return $errors;
